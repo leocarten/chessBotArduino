@@ -1,0 +1,366 @@
+
+/*
+ Stepper Motor Control - one revolution
+
+ This program drives a unipolar or bipolar stepper motor.
+ The motor is attached to digital pins 8 - 11 of the Arduino.
+
+ The motor should revolve one revolution in one direction, then
+ one revolution in the other direction.
+
+
+ Created 11 Mar. 2007
+ Modified 30 Nov. 2009
+ by Tom Igoe
+
+ */
+
+ #include <Servo.h>
+
+ #define ACTUATOR 23
+ #define CLAW 22
+
+ //X axis = 182
+bool first_move = false;
+int x_move_from = 1;
+int x_move_to = 0;
+
+int y_move_from = 1;
+int y_move_to = 0;
+#include <Stepper.h>
+#include <VariableTimedAction.h>
+
+const int stepsPerRevolution = 400;  // change this to fit the number of steps per revolution 1400 //  182
+// for your motor
+
+// initialize the stepper library on pins 8 through 11:
+Stepper xAxis(stepsPerRevolution, 8, 9, 10, 11);
+Stepper yAxis(stepsPerRevolution, 2, 3, 5, 6);
+
+class xStepperAxis : public VariableTimedAction {
+  private:
+
+    //this method will be called at your specified interval
+    unsigned long run() {
+      xAxis.step(-182*8);
+      stop();
+      return 0;
+    }
+};
+
+class yStepperAxis : public VariableTimedAction {
+  private:
+
+    //this method will be called at your specified interval
+    unsigned long run() {
+      yAxis.step(182*8);
+      stop();
+      return 0;
+    }
+};
+
+class tester : public VariableTimedAction {
+  private:
+
+    //this method will be called at your specified interval
+    unsigned long run() {
+      stop();
+      return 0;
+    }
+};
+
+yStepperAxis yA;
+xStepperAxis xA;
+
+int x_direction(String move, bool if_first_move, bool if_piece_captured){
+  int val_to_return = 0;
+  if(if_first_move){ 
+    // move from h1 to new value
+    char x_movement = move[1];
+    int intDigit = x_movement - '0'; // convert char to int
+    // move from 
+    // Serial.println(x_move_from);
+    // Serial.println(intDigit);
+    if(x_move_from == intDigit){
+      val_to_return = 0;
+    }
+    //      1 - 7
+    else if(x_move_from - intDigit <= 0){
+      val_to_return = (intDigit - x_move_from) * 182;
+    }
+    else{
+      // 6 - 5
+      val_to_return = (intDigit - x_move_from) * 182;
+    }
+    if(val_to_return != 0){
+      x_move_from = intDigit;
+    }
+  }
+  // need a case for when we need to remove a piece
+  else{
+    char x_movement = move[1];
+    int intDigit = x_movement - '0'; // convert char to int
+    // Serial.print("intDigit: ");
+    // Serial.println(intDigit);
+    // Let's imagine the x_move_from is 8
+    // Let's imagine the intDigit is 4
+
+    if(x_move_from == intDigit){
+      val_to_return = 0;
+    }
+    //.    7 4
+    else if(x_move_from < intDigit){
+        // Serial.println("Moving up");
+        val_to_return = (intDigit - x_move_from) * 182;
+    }
+    else{
+        // Serial.println("Moving down");
+        val_to_return = (x_move_from - intDigit) * -182;
+    }
+
+
+    if(val_to_return != 0){
+      x_move_from = intDigit;
+    }
+  }
+
+  return val_to_return;
+}
+
+int convertLetterToInt(char letter) {
+  int result = 0;
+
+  switch (letter) {
+    case 'a': result = 8; break;
+    case 'b': result = 7; break;
+    case 'c': result = 6; break;
+    case 'd': result = 5; break;
+    case 'e': result = 4; break;
+    case 'f': result = 3; break;
+    case 'g': result = 2; break;
+    case 'h': result = 1; break;
+    default:  result = 0; break;
+  }
+
+  return result;
+}
+
+int y_direction(String move, bool if_first_move, bool if_piece_captured) {
+  int val_to_return = 0;
+
+  char y_movement = move[0];
+  int letter_to_int = convertLetterToInt(y_movement);
+  // Serial.print("Letter to int: ");
+  // Serial.println(letter_to_int);
+
+  // if (if_first_move) {
+    if (letter_to_int == y_move_from) {
+      val_to_return = 0;
+      //.      3                2
+    } else if (letter_to_int > y_move_from) {
+      val_to_return = (letter_to_int - y_move_from) * 182;
+    } else {
+      val_to_return = (letter_to_int - y_move_from) * 182;
+    }
+
+    if(val_to_return != 0){
+      y_move_from = letter_to_int;
+    }
+
+    // y_move_from = letter_to_int;
+  // }
+  // else{
+  //   if (letter_to_int == y_move_from) {
+  //     val_to_return = 0;
+  //   } else if (letter_to_int > y_move_from) {
+  //     val_to_return = (letter_to_int - y_move_from) * 182;
+  //   } else {
+  //     val_to_return = (letter_to_int - y_move_from) * -182;
+  //   }
+
+  //   y_move_from = letter_to_int;
+  // }
+  return val_to_return;
+}
+
+Servo crane; 
+Servo claw;
+
+void dropdown(bool close) {
+  int top = 20;
+  int bottom = 175;
+  int delayTime = 20;
+
+  for(int i = top; i <= bottom; i++) {
+    crane.write(i);
+    delay(delayTime);
+  }
+  if(!close) {
+    claw.write(20);
+  } else {
+    claw.write(90);
+  }
+  for(int i = bottom; i >= top; i--) {
+    crane.write(i);
+    delay(delayTime);
+  }
+  delay(100);
+}
+
+void setup() {
+
+  crane.attach(ACTUATOR);
+  claw.attach(CLAW);
+  crane.write(20);
+  claw.write(20);
+
+  // // t.start(1000);
+  // //t.toggleRunning();
+  xAxis.setSpeed(40);
+  yAxis.setSpeed(40);
+  // // yA.start(1000);
+  // // xA.start(1000);
+  // //yStepperAxis.toggleRunning();
+  // //xStepperAxis.toggleRunning();
+  // // set the speed at 60 rpm:
+  // // initialize the serial port:
+  // Serial.begin(9600);
+
+
+  // // step one revolution  in one direction:
+  // //xAxis.step(0);
+  // //yAxis.step(0);
+
+  // int x = x_direction("h8",false, false);
+  // int y = y_direction("h8",false, false);
+  //   xAxis.step(-y);
+  // // Serial.println("NIKIT IS A DUMB ASS BITCH");
+  // yAxis.step(x);
+
+  // dropdown(false);
+  //   delay(4000);
+
+
+  // int xx = x_direction("a8",false, false);
+  // int yy = y_direction("a8",false, false);
+  //   xAxis.step(-yy);
+  // // Serial.println("NIKIT IS A DUMB ASS BITCH");
+  // yAxis.step(xx);
+  // dropdown(true);
+
+  //   delay(4000);
+
+
+  // int xxx = x_direction("a1",false, false);
+  // int yyy = y_direction("a1",false, false);
+
+  // // Serial.print("The x: ");
+  // // Serial.println(x);
+  // // Serial.print("The y: ");
+  // // Serial.println(y);
+
+
+  // xAxis.step(-yyy);
+  // // Serial.println("NIKIT IS A DUMB ASS BITCH");
+  // yAxis.step(xxx);
+  // dropdown(false);
+
+  //   delay(5000);
+
+  // // delay(5000);
+
+  //   int xxxx = x_direction("h1",false, false);
+  // int yyyy = y_direction("h1",false, false);
+  //   xAxis.step(-yyyy);
+  // // Serial.println("NIKIT IS A DUMB ASS BITCH");
+  // yAxis.step(xxxx);
+  // dropdown(true);
+
+  //   delay(4000);
+
+  // dropdown(false);
+
+  // delay(5000);
+  // dropdown(true);
+
+  Serial.begin(9600);
+}
+
+String str = "";
+void loop() {
+  if (Serial.available() > 0) {
+    if (!str.equals(Serial.readStringUntil('\n'))){
+       String data = Serial.readStringUntil('\n');
+        String lastTwoChars = data.substring(data.length() - 2);
+        String firstTwoChars = data.substring(0, 2);
+      if(!first_move){
+        delay(1000);
+        int x = x_direction(firstTwoChars, true, true);
+        int y = y_direction(firstTwoChars, true, true);
+        xAxis.step(-y);
+        delay(1000);
+        yAxis.step(x);
+        dropdown(true);
+        int xx = x_direction(lastTwoChars,false, false);
+        int yy = y_direction(lastTwoChars,false, false);
+        xAxis.step(-yy);
+        delay(1000);
+        yAxis.step(xx);
+        dropdown(false);
+
+      }
+      else{
+        delay(1000);
+        int x = x_direction(firstTwoChars, false, true);
+        int y = y_direction(firstTwoChars, false, true);
+        xAxis.step(-y);
+        delay(1000);
+        yAxis.step(x);
+        dropdown(true);
+
+        int xx = x_direction(lastTwoChars,false, false);
+        int yy = y_direction(lastTwoChars,false, false);
+        xAxis.step(-yy);
+        delay(1000);
+        yAxis.step(xx);
+        dropdown(false);
+      }
+
+    //   first_move = true;
+     
+
+    //   // a3a4
+      
+    //   int xx = x_direction(data,false, false);
+    //   int yy = y_direction(data,false, false);
+    //   xAxis.step(-yy);
+    //   yAxis.step(xx);
+    //   dropdown(true);
+
+
+
+    // String hi = data.substring(data.length() - 2);
+
+
+    //   int xxx = x_direction(hi,false, false);
+    //   int yyy = y_direction(hi,false, false);
+
+    //   xAxis.step(-yyy);
+    //   yAxis.step(xxx);
+    //   dropdown(false);
+
+
+      Serial.println("Stop");
+      str = data;
+    }
+  }
+}
+
+// String prevCoords = "";
+// void loop() {
+//   Serial.println("Hello from Arduino!");
+//   delay(1000);
+    
+
+// }
+
