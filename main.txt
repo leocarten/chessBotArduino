@@ -195,11 +195,14 @@ void dropdown(bool close) {
     crane.write(i);
     delay(delayTime);
   }
+  delay(100);
   if(!close) {
     claw.write(20);
   } else {
     claw.write(90);
   }
+  delay(100);
+
   for(int i = bottom; i >= top; i--) {
     crane.write(i);
     delay(delayTime);
@@ -218,6 +221,8 @@ void setup() {
   // //t.toggleRunning();
   xAxis.setSpeed(40);
   yAxis.setSpeed(40);
+
+
   // // yA.start(1000);
   // // xA.start(1000);
   // //yStepperAxis.toggleRunning();
@@ -294,35 +299,33 @@ void loop() {
         String lastTwoChars = data.substring(data.length() - 2);
         String firstTwoChars = data.substring(0, 2);
       if(!first_move){
-        delay(1000);
         int x = x_direction(firstTwoChars, true, true);
         int y = y_direction(firstTwoChars, true, true);
         xAxis.step(-y);
-        delay(1000);
         yAxis.step(x);
         dropdown(true);
         int xx = x_direction(lastTwoChars,false, false);
         int yy = y_direction(lastTwoChars,false, false);
+        //delay(7000);
         xAxis.step(-yy);
-        delay(1000);
         yAxis.step(xx);
+        //delay(7000);
         dropdown(false);
 
       }
       else{
-        delay(1000);
         int x = x_direction(firstTwoChars, false, true);
         int y = y_direction(firstTwoChars, false, true);
         xAxis.step(-y);
-        delay(1000);
         yAxis.step(x);
         dropdown(true);
-
+        //delay(7000);
         int xx = x_direction(lastTwoChars,false, false);
         int yy = y_direction(lastTwoChars,false, false);
         xAxis.step(-yy);
-        delay(1000);
         yAxis.step(xx);
+        //delay(7000);
+
         dropdown(false);
       }
 
