@@ -292,6 +292,7 @@ void setup() {
 }
 
 String str = "";
+int count = 0;
 void loop() {
   if (Serial.available() > 0) {
     if (!str.equals(Serial.readStringUntil('\n'))){
@@ -329,41 +330,12 @@ void loop() {
         dropdown(false);
       }
 
-    //   first_move = true;
-     
-
-    //   // a3a4
-      
-    //   int xx = x_direction(data,false, false);
-    //   int yy = y_direction(data,false, false);
-    //   xAxis.step(-yy);
-    //   yAxis.step(xx);
-    //   dropdown(true);
-
-
-
-    // String hi = data.substring(data.length() - 2);
-
-
-    //   int xxx = x_direction(hi,false, false);
-    //   int yyy = y_direction(hi,false, false);
-
-    //   xAxis.step(-yyy);
-    //   yAxis.step(xxx);
-    //   dropdown(false);
-
-
       Serial.println("Stop");
       str = data;
+      while(str.equals(Serial.readStringUntil('\n')));
+
+      count++;
     }
   }
 }
-
-// String prevCoords = "";
-// void loop() {
-//   Serial.println("Hello from Arduino!");
-//   delay(1000);
-    
-
-// }
 
